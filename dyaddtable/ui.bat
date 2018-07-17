@@ -1,0 +1,1 @@
+c:\Python35\Scripts\pyuic5.exe ppp.ui -o ppp.py
