@@ -8,7 +8,23 @@ import os
 import copy
 from ppp import Ui_Form
 from lxml import etree
+import zipfile
 
+def Achive_Folder_To_ZIP(sFilePath):
+    """
+    input : Folder path and name
+    output: using zipfile to ZIP folder
+    """
+    zf = zipfile.ZipFile(sFilePath + '.ZIP', mode='w')
+    os.chdir(sFilePath)
+    #print sFilePath
+    for root, folders, files in os.walk(".\\"):
+        for sfile in files:
+            aFile = os.path.join(root, sfile)
+            #print aFile
+            zf.write(aFile)
+    zf.close()
+ 
 
 info={
       'MCU':"N76E003",
@@ -731,11 +747,12 @@ class MyMainWindow(QMainWindow, Ui_Form):
         Q_FUNCTION.clear()
         Q_INTERRUPT_INIT.clear()
 #clock
-        info["CLK_SOURCE"]=self.c_CLK.currentText()
-        CLK_SOURCE=self.TREE.find("./CLK_SOURCE/"+info["CLK_SOURCE"])
-        temp=info["p_SYSTEM_CLK"]
-        if temp!=0:
-            Q_System[temp]=CLK_SOURCE.text  
+        if(info["p_SYSTEM_CLK"]!=0):
+            info["CLK_SOURCE"]=self.c_CLK.currentText()
+            CLK_SOURCE=self.TREE.find("./CLK_SOURCE/"+info["CLK_SOURCE"])
+            temp=info["p_SYSTEM_CLK"]
+            title="//System Clock Initial"
+            Q_System[temp]=title+CLK_SOURCE.text  
 
 
 #pins initial
@@ -743,7 +760,7 @@ class MyMainWindow(QMainWindow, Ui_Form):
             s_temp="//GPIO INIT\n\r"
             for te in range(0,20):
                 if self.combox_list_gpio_mode[te].currentText()!="":
-                   s_temp=s_temp+self.t_GPIO.item(te,0).text()+self.combox_list_gpio_mode[te].currentText()+";\n\r"            
+                   s_temp=s_temp+self.t_GPIO.item(te,0).text()+self.combox_list_gpio_mode[te].currentText()+";\n"            
             temp=info["p_GPIO_INIT"]
             Q_System[temp]=s_temp
         
@@ -753,7 +770,8 @@ class MyMainWindow(QMainWindow, Ui_Form):
             if self.c_WAKEUP.currentText()=="POLL":            
                 POLL=TREE.find("./WDT/POLL")       
                 temp=info["p_WAKEUP"]
-                Q_POLL[temp]=POLL.text
+                title="//Wakeup Initial\n\r"
+                Q_POLL[temp]=title+POLL.text
 
             if self.c_WAKEUP.currentText()=="INTERRUPT":
                 INTERRUPT=self.TREE.find("./WAKEUP/INTERRUPT")       
@@ -761,14 +779,16 @@ class MyMainWindow(QMainWindow, Ui_Form):
                 Q_INTERRUPT_HANDLER[temp]=INTERRUPT.text
                 INTERRUPT_INIT=self.TREE.find("./WAKEUP/INTERRUPT_INIT")       
                 temp=info["p_WAKEUP"]
-                Q_INTERRUPT_INIT[temp]=INTERRUPT_INIT.text
+                title="//Wakeup Initial\n\r"
+                Q_INTERRUPT_INIT[temp]=title+INTERRUPT_INIT.text
 #WDT
 
         if(info["p_WDT"]!=0):
             if self.c_WDT.currentText()=="POLL":  
                 POLL=self.TREE.find("./WDT/POLL")       
                 temp=info["p_WDT"]
-                Q_POLL[temp]=POLL.text
+                title="//WDT Initial\n\r"
+                Q_POLL[temp]=title+POLL.text
 
             if self.c_WDT.currentText()=="INTERRUPT":
                 INTERRUPT=self.TREE.find("./WDT/INTERRUPT")       
@@ -777,14 +797,16 @@ class MyMainWindow(QMainWindow, Ui_Form):
 
                 INTERRUPT_INIT=self.TREE.find("./WDT/INTERRUPT_INIT")       
                 temp=info["p_WDT"]
-                Q_INTERRUPT_INIT[temp]=INTERRUPT_INIT.text
+                title="//WDT Initial\n\r"
+                Q_INTERRUPT_INIT[temp]=title+INTERRUPT_INIT.text
 
 #CLKOUT
         if(info["p_CLKOUT"]!=0):
             if self.c_CLKOUT.currentText()=="POLL":
                 POLL=self.TREE.find("./CLKOUT/POLL")       
                 temp=info["p_CLKOUT"]
-                Q_System[temp]=POLL.text
+                title="//CLK OUT Initial\n\r"
+                Q_System[temp]=title+POLL.text
 
             if self.c_CLKOUT.currentText()=="INTERRUPT":
                INTERRUPT=self.TREE.find("./CLKOUT/INTERRUPT")       
@@ -920,18 +942,49 @@ class MyMainWindow(QMainWindow, Ui_Form):
             if self.c_PWM.currentText()=="POLL":
                 INIT=self.TREE.find("./PWM/INIT")   
                 PWM_PIN_SOURCE=self.TREE.find("./PWM/PWM_PIN/"+self.c_PWM_CH.currentText())
+                INIT_PMW_CLK=self.TREE.find("./PWM/INIT_PMW_CLK")
+                PWM_PIN_CLK=0
+                if "PWM0" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW0")
+                if "PWM1" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW1")
+                if "PWM2" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW2")
+                if "PWM3" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW3")
+                if "PWM4" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW4")
+                if "PWM5" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW5")
+
+
                 temp=info["p_PWM"]
-                Q_POLL[temp]=PWM_PIN_SOURCE.text+INIT.text
+                Q_POLL[temp]=PWM_PIN_SOURCE.text+INIT_PMW_CLK.text+PWM_PIN_CLK.text+INIT.text
 
 
             if self.c_PWM.currentText()=="INTERRUPT":
                 INTERRUPT=self.TREE.find("./PWM/INTERRUPT")       
                 temp=info["p_PWM"]
                 Q_INTERRUPT_HANDLER[temp]=INTERRUPT.text
-
+                INIT_PMW_CLK=self.TREE.find("./PWM/INIT_PMW_CLK")
+                PWM_PIN_CLK=0
+                PWM_PIN_SOURCE=self.TREE.find("./PWM/PWM_PIN/"+self.c_PWM_CH.currentText())
+                if "PWM0" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW0")
+                if "PWM1" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW1")
+                if "PWM2" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW2")
+                if "PWM3" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW3")
+                if "PWM4" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW4")
+                if "PWM5" in PWM_PIN_SOURCE.text:
+                    PWM_PIN_CLK=self.TREE.find("./PWM/INIT_PMW5")
                 INTERRUPT_INIT=self.TREE.find("./PWM/INTERRUPT_INIT")  
-                PWM_PIN_SOURCE=self.TREE.find("./PWM/PWM_PIN/"+self.c_PWM_CH.currentText())           
-                Q_INTERRUPT_INIT[temp]=PWM_PIN_SOURCE.text+INTERRUPT_INIT.text
+                PWM_PIN_SOURCE=self.TREE.find("./PWM/PWM_PIN/"+self.c_PWM_CH.currentText())   
+                INIT_PMW_CLK=self.TREE.find("./PWM/INIT_PMW_CLK")        
+                Q_INTERRUPT_INIT[temp]=PWM_PIN_SOURCE.text+INIT_PMW_CLK.text+PWM_PIN_CLK.text+INTERRUPT_INIT.text
 
 #timer3
         if (info["p_TIMER3"]!=0):
@@ -1010,11 +1063,11 @@ class MyMainWindow(QMainWindow, Ui_Form):
              Q_FUNCTION[4]=IAP_Read.text
                
         self.e_GEN_CODE.setText("")
-        self.e_GEN_CODE.append("#include ""N76E003.h""")
-        self.e_GEN_CODE.append("#include ""SFR_Macro.h""")
-        self.e_GEN_CODE.append("#include ""Function_define.h""")
-        self.e_GEN_CODE.append("#include ""Common.h""")
-        self.e_GEN_CODE.append("#include ""Delay.h""")
+        self.e_GEN_CODE.append("#include \"N76E003.h\"")
+        self.e_GEN_CODE.append("#include \"SFR_Macro.h\"")
+        self.e_GEN_CODE.append("#include \"Function_define.h\"")
+        self.e_GEN_CODE.append("#include \"Common.h\"")
+        self.e_GEN_CODE.append("#include \"Delay.h\"")
         self.e_GEN_CODE.append(" ")
         self.e_GEN_CODE.append("//interrupt function")
         #out put arrary
@@ -1046,6 +1099,10 @@ class MyMainWindow(QMainWindow, Ui_Form):
             self.e_GEN_CODE.append(v)
         self.e_GEN_CODE.append("while(1);")
         self.e_GEN_CODE.append("}")
+        with open('.\\N76E003_BSP_Keil\\Sample_Code\\PROJECT\\Code\\main.c', 'w') as the_file:
+                the_file.write(self.e_GEN_CODE.toPlainText())
+
+        Achive_Folder_To_ZIP(".\\N76E003_BSP_Keil");
         #print("while(1);")
         #print("}")
         '''

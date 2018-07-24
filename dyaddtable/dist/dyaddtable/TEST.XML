@@ -1,0 +1,1081 @@
+<SETTING>
+  <CLK_SOURCE>
+    <LIRC>
+      ////***** LIRC enable part*****
+      ////** Since LIRC is always enable, switch to LIRC directly
+      set_OSC1; //step3: switching system clock source if needed
+      clr_OSC0;
+      while((CKEN&SET_BIT0)==1);  //step4: check system clock switching OK or NG
+      clr_HIRCEN;
+    </LIRC>
+
+    <HIRC_16M>
+      //***** HIRC enable part *****
+      set_HIRCEN; //step1: enable HIRC clock source run
+      while((CKSWT&SET_BIT5)==0);	  //step2: check ready
+      clr_OSC1; /step3: switching system clock source if needed
+      clr_OSC0;
+      while((CKEN&SET_BIT0)==1);  //step4: check system clock switching OK or NG
+    </HIRC_16M>
+
+    <HIRC_16.6M>
+      UINT8 hircmap0,hircmap1;
+      UINT16 trimvalue16bit;
+
+      // Modify HIRC to 16.6MHz, more detail please see datasheet V1.02
+      set_IAPEN;
+      IAPAL = 0x30;
+      IAPAH = 0x00;
+      IAPCN = READ_UID;
+      set_IAPGO;
+      hircmap0 = IAPFD;
+      IAPAL = 0x31;
+      IAPAH = 0x00;
+      set_IAPGO;
+      hircmap1 = IAPFD;
+      clr_IAPEN;
+      trimvalue16bit = ((hircmap0<<1)+(hircmap1&0x01));
+      trimvalue16bit = trimvalue16bit - 15;
+      hircmap1 = trimvalue16bit&0x01;
+      hircmap0 = trimvalue16bit>>1;
+      TA=0XAA;
+      TA=0X55;
+      RCTRIM0 = hircmap0;
+      TA=0XAA;
+      TA=0X55;
+      RCTRIM1 = hircmap1;
+    </HIRC_16.6M>
+  </CLK_SOURCE>
+
+  <PINS>
+    <P05>P05</P05>
+    <P06>P06</P06>
+    <P07>P07</P07>
+    <P20>P20</P20>
+    <P30>P30</P30>
+    <P17>P17</P17>
+    <P16>P16</P16>
+    <P15>P15</P15>
+    <P14>P14</P14>
+    <P13>P13</P13>
+    <P12>P12</P12>
+    <P11>P11</P11>
+    <P10>P10</P10>
+    <P00>P00</P00>
+    <P01>P01</P01>
+    <P02>P02</P02>
+    <P03>P03</P03>
+    <P04>P04</P04>
+  </PINS>
+  <GPIO_MODE>
+    <_Quasi_Mode>_Quasi_Mode</_Quasi_Mode>
+    <_PushPull_Mode>_PushPull_Mode</_PushPull_Mode>
+    <_Input_Mode>_Input_Mode</_Input_Mode>
+    <_OpenDrain_Mode>_OpenDrain_Mode</_OpenDrain_Mode>
+  </GPIO_MODE>
+
+  <WAKEUP>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>      
+    </MODE>
+    <POLL></POLL>
+    <INTERRUPT>
+      void WakeUp_Timer_ISR (void)  interrupt 17 //ISR for self wake-up timer
+      {
+      clr_WKTF; //clear wakeup interrupt flag
+      //USER CODE....
+      }
+    </INTERRUPT>
+    <INTERRUPT_INIT>
+      WKCON = vWKCON; //timer base 10k, Pre-scale = 1/WKCON setting Value
+      RWK = vRWK;
+      set_EWKT; // enable WKT interrupt
+      set_WKTR; // Wake-up timer run
+    </INTERRUPT_INIT>
+  </WAKEUP>
+
+  <WDT>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    WDT interrupt sub-routine
+      ************************************************************************************************************/
+      void WDT_ISR (void) interrupt 10
+      {
+      clr_WDTF; //clear WDT interrupt flag
+      set_WDCLR;
+      //USER CODE....
+      }
+    </INTERRUPT>
+    <INTERRUPT_INIT>
+      //WDT init
+      //--------------------------------------------------------
+      //Warning:
+      //Pleaes always check CONFIG WDT disable first
+      //only when WDT reset disable, WDT use as pure timer
+      //--------------------------------------------------------
+      TA=0xAA;
+      TA=0x55;
+      WDCON=vWDCON; //Setting WDT prescale
+      set_WDTR;  //WDT run
+      set_WDCLR;  //Clear WDT timer
+      set_EWDT;
+      //set_WIDPD;  //WDT run in POWER DOWM mode setting if needed
+    </INTERRUPT_INIT>
+
+    <POLL>
+      TA=0xAA;
+      TA=0x55;
+      WDCON=vWDCON;   //Setting WDT prescale
+      set_WDCLR;    //Clear WDT timer
+      while((WDCON|~SET_BIT6)==0xFF);   //confirm WDT clear is ok before into power down mode
+
+      //user code...
+      //set_WDCLR;  //clear WDT count if needed
+    </POLL>
+    <TIMEOUT>
+       <TimeOut_6.4ms>0x0</TimeOut_6.4ms>
+       <TimeOut_25.6ms>0x01</TimeOut_25.6ms>
+      <TimeOut_51.2ms>0x02</TimeOut_51.2ms>
+      <TimeOut_102.4ms>0x03</TimeOut_102.4ms>
+      <TimeOut_204.8ms>0x04</TimeOut_204.8ms>
+      <TimeOut_409.6ms>0x05</TimeOut_409.6ms>
+      <TimeOut_819.2ms>0x06</TimeOut_819.2ms>
+      <TimeOut_1.6384s>0x07</TimeOut_1.6384s>      
+    </TIMEOUT>
+    
+    
+  </WDT>
+
+  <INT0>
+    <INT_SELECT>
+      <LEVEL>
+        LEVEL
+      </LEVEL>
+      <FALL>
+        FALL
+      </FALL>
+    </INT_SELECT>  
+    <MODE>
+          <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <LEVEL>
+      IT0 = 0; //LOW LEVEL      
+    </LEVEL>
+    <FALL>
+      IT0 = 1; //FALLING EDGE      
+    </FALL>
+    <POLL></POLL>
+    <INTERRUPT>
+      void EXT_INT0(void) interrupt 0
+      {
+
+      }
+    </INTERRUPT>
+    <INTERRUPT_INIT>
+      set_EX0;  //ENABLE INT0 interrrupt
+    </INTERRUPT_INIT>
+  </INT0>
+
+  <INT1>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <INT_SELECT>
+      <LEVEL>
+        LEVEL
+      </LEVEL>
+      <FALL>
+        FALL
+      </FALL>
+    </INT_SELECT>
+    <INTERRUPT>
+      void EXT_INT1(void) interrupt 1 //INT1, interrupt 2 (location at 0013H)
+      {
+
+      }
+    </INTERRUPT>
+    
+    <LEVEL>
+      IT1 = 0; //LOW LEVEL
+    </LEVEL>
+    
+    <FALL>
+      IT1 = 1; //FALLING EDGE
+    </FALL>
+    
+    <INTERRUPT_INIT>
+      set_EX1; //ENABLE INT1 interrrupt
+    </INTERRUPT_INIT>
+  </INT1>
+
+  <PIN_INT>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <POLL></POLL>
+    <PIN_INT_PORT>
+      <Enable_INT_Port0>Enable_INT_Port0;</Enable_INT_Port0>
+      <Enable_INT_Port1>Enable_INT_Port1;</Enable_INT_Port1>
+      <Enable_INT_Port2>Enable_INT_Port2;</Enable_INT_Port2>
+      <Enable_INT_Port3>Enable_INT_Port3;</Enable_INT_Port3>
+    </PIN_INT_PORT>
+
+    <PIN0>
+      <NONE>      </NONE>
+      <Enable_BIT0_LowLevel_Trig>  Enable_BIT0_LowLevel_Trig;    </Enable_BIT0_LowLevel_Trig>
+      <Enable_BIT0_HighLevel_Trig> Enable_BIT0_HighLevel_Trig;   </Enable_BIT0_HighLevel_Trig>
+      <Enable_BIT0_FallEdge_Trig>  Enable_BIT0_FallEdge_Trig     </Enable_BIT0_FallEdge_Trig>
+      <Enable_BIT0_RasingEdge_Trig>Enable_BIT0_RasingEdge_Trig   </Enable_BIT0_RasingEdge_Trig>    
+    </PIN0>
+
+
+    <PIN1>
+      <NONE>      </NONE>
+      <Enable_BIT1_LowLevel_Trig>  Enable_BIT1_LowLevel_Trig;    </Enable_BIT1_LowLevel_Trig>
+      <Enable_BIT1_HighLevel_Trig> Enable_BIT1_HighLevel_Trig;   </Enable_BIT1_HighLevel_Trig>
+      <Enable_BIT1_FallEdge_Trig>  Enable_BIT1_FallEdge_Trig;    </Enable_BIT1_FallEdge_Trig>
+      <Enable_BIT1_RasingEdge_Trig>Enable_BIT1_RasingEdge_Trig ; </Enable_BIT1_RasingEdge_Trig>
+    </PIN1>
+
+    <PIN2>
+      <NONE>      </NONE>
+      <Enable_BIT2_LowLevel_Trig>  Enable_BIT2_LowLevel_Trig;    </Enable_BIT2_LowLevel_Trig>
+      <Enable_BIT2_HighLevel_Trig> Enable_BIT2_HighLevel_Trig;   </Enable_BIT2_HighLevel_Trig>
+      <Enable_BIT2_FallEdge_Trig>  Enable_BIT2_FallEdge_Trig;    </Enable_BIT2_FallEdge_Trig>
+      <Enable_BIT2_RasingEdge_Trig>Enable_BIT2_RasingEdge_Trig ; </Enable_BIT2_RasingEdge_Trig>
+    </PIN2>
+
+    <PIN3>
+      <NONE>      </NONE>
+      <Enable_BIT3_LowLevel_Trig>  Enable_BIT3_LowLevel_Trig;    </Enable_BIT3_LowLevel_Trig>
+      <Enable_BIT3_HighLevel_Trig> Enable_BIT3_HighLevel_Trig;   </Enable_BIT3_HighLevel_Trig>
+      <Enable_BIT3_FallEdge_Trig>  Enable_BIT3_FallEdge_Trig;    </Enable_BIT3_FallEdge_Trig>
+      <Enable_BIT3_RasingEdge_Trig>Enable_BIT3_RasingEdge_Trig ; </Enable_BIT3_RasingEdge_Trig>
+    </PIN3>
+
+    <PIN4>
+      <NONE>      </NONE>
+      <Enable_BIT4_LowLevel_Trig>  Enable_BIT4_LowLevel_Trig;    </Enable_BIT4_LowLevel_Trig>
+      <Enable_BIT4_HighLevel_Trig> Enable_BIT4_HighLevel_Trig;   </Enable_BIT4_HighLevel_Trig>
+      <Enable_BIT4_FallEdge_Trig>  Enable_BIT4_FallEdge_Trig;    </Enable_BIT4_FallEdge_Trig>
+      <Enable_BIT4_RasingEdge_Trig>Enable_BIT4_RasingEdge_Trig ; </Enable_BIT4_RasingEdge_Trig>
+    </PIN4>
+
+    <PIN5>
+      <NONE>      </NONE>
+      <Enable_BIT5_LowLevel_Trig>  Enable_BIT5_LowLevel_Trig;    </Enable_BIT5_LowLevel_Trig>
+      <Enable_BIT5_HighLevel_Trig> Enable_BIT5_HighLevel_Trig;   </Enable_BIT5_HighLevel_Trig>
+      <Enable_BIT5_FallEdge_Trig>  Enable_BIT5_FallEdge_Trig;    </Enable_BIT5_FallEdge_Trig>
+      <Enable_BIT5_RasingEdge_Trig>Enable_BIT5_RasingEdge_Trig ; </Enable_BIT5_RasingEdge_Trig>
+    </PIN5>
+
+    <PIN6>
+      <NONE>      </NONE>
+      <Enable_BIT6_LowLevel_Trig>  Enable_BIT6_LowLevel_Trig;    </Enable_BIT6_LowLevel_Trig>
+      <Enable_BIT6_HighLevel_Trig> Enable_BIT6_HighLevel_Trig;   </Enable_BIT6_HighLevel_Trig>
+      <Enable_BIT6_FallEdge_Trig>  Enable_BIT6_FallEdge_Trig;    </Enable_BIT6_FallEdge_Trig>
+      <Enable_BIT6_RasingEdge_Trig>Enable_BIT6_RasingEdge_Trig;  </Enable_BIT6_RasingEdge_Trig>
+    </PIN6>
+
+    <PIN7>
+      <NONE>      </NONE>
+      <Enable_BIT7_LowLevel_Trig>  Enable_BIT7_LowLevel_Trig;    </Enable_BIT7_LowLevel_Trig>
+      <Enable_BIT7_HighLevel_Trig> Enable_BIT7_HighLevel_Trig;   </Enable_BIT7_HighLevel_Trig>
+      <Enable_BIT7_FallEdge_Trig>  Enable_BIT7_FallEdge_Trig;    </Enable_BIT7_FallEdge_Trig>
+      <Enable_BIT7_RasingEdge_Trig>Enable_BIT7_RasingEdge_Trig;  </Enable_BIT7_RasingEdge_Trig>
+    </PIN7>
+
+    <INTERRUPT>
+      void PinInterrupt_ISR (void) interrupt 7
+      {
+      if(PIF &0x1) //check bit
+      {
+
+      }
+      PIF = 0x00; //clear pin interrupt flag
+      }
+    </INTERRUPT>
+    
+    <INTERRUPT_INIT>
+      set_EPI;  // Enable pin interrupt
+    </INTERRUPT_INIT>
+  </PIN_INT>
+
+  <CLKOUT>
+    <MODE>
+      <POLL>POLL</POLL>
+    </MODE>
+    <POLL>
+      set_CLOEN;  //System Clock Output Enable
+    </POLL>
+    <INTERRUPT></INTERRUPT>
+    <INTERRUPT_INIT></INTERRUPT_INIT>
+  </CLKOUT>
+  
+  
+  <UART0>
+    <BAUDRATE>
+      <b115200></b115200>
+      <b57600></b57600>
+      <b38400></b38400>
+      <b19200></b19200>
+      <b9600></b9600>
+      <b4800></b4800>
+    </BAUDRATE>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <UART0_TIMER>
+      <UART_TIMER0_INIT>TIMER0</UART_TIMER0_INIT>
+      <UART_TIMER1_INIT>TIMER1</UART_TIMER1_INIT>
+      <UART_TIMER1_MODE3_INIT>TIMER1</UART_TIMER1_MODE3_INIT>
+    </UART0_TIMER>
+
+    <UART_TIMER0_INIT>
+      InitialUART0_Timer0(uBaudrate);
+    </UART_TIMER0_INIT>
+    
+    <UART_TIMER1_INIT>
+      InitialUART0_Timer1(uBaudrate);
+    </UART_TIMER1_INIT>
+    <UART_TIMER1_MODE3_INIT>
+      SCON = 0xD0;			// Special setting the mode 3 and
+      TMOD |= 0x20;    	//Timer1 Mode1
+      set_SMOD;        	//UART0 Double Rate Enable
+      set_T1M;
+      clr_BRCK;        	//Serial port 0 baud rate clock source = Timer1
+      TH1 = 256 - (1000000/ubaudrate+1);               /*16 MHz */
+      set_TR1;
+    </UART_TIMER1_MODE3_INIT>
+    
+    <INTERRUPT_INIT>
+      clr_TI;
+      set_ES;           //enable UART interrupt
+    </INTERRUPT_INIT>
+    <POLL>
+      //UART TX  and RX poll Sample code
+      Send_Data_To_UART0(0X55);
+      Receive_Data_From_UART0();
+    </POLL>
+    <INTERRUPT>
+      /**
+      * FUNCTION_PURPOSE: serial interrupt, echo received data.
+      * FUNCTION_INPUTS: P0.7(RXD) serial input
+      * FUNCTION_OUTPUTS: P0.6(TXD) serial output
+      */
+      void SerialPort0_ISR(void) interrupt 4
+      {
+      if (RI==1)
+      {                                       /* if reception occur */
+      clr_RI;                             /* clear reception flag for next reception */
+     
+      }
+      if(TI==1)
+      {
+      clr_TI;                             /* if emission occur */
+      
+      }
+      }
+    </INTERRUPT>
+  </UART0>
+
+  <UART1>
+    <BAUDRATE>
+      <b115200></b115200>
+      <b57600></b57600>
+      <b38400></b38400>
+      <b19200></b19200>
+      <b9600></b9600>
+      <b4800></b4800>
+    </BAUDRATE>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <UART1_TIMER>
+      <UART1_TIMER3_INIT>UART1_TIMER3_INIT</UART1_TIMER3_INIT>      
+    </UART1_TIMER>
+
+    <UART1_TIMER3_INIT>
+      InitialUART1_Timer3(UBaudrate1);
+      </UART1_TIMER3_INIT>
+
+    <INTERRUPT_INIT>
+      clr_TI_1; 
+      set_ES_1; //enable UART interrupt
+    </INTERRUPT_INIT>
+    
+    <POLL>
+      //UART TX  and RX poll Sample code
+      Send_Data_To_UART1(0X55);
+      Receive_Data_From_UART1();
+    </POLL>
+
+    <INTERRUPT>
+      /**
+      * FUNCTION_PURPOSE: serial interrupt, echo received data.
+      * FUNCTION_INPUTS : P0.2(RXD) serial input
+      * FUNCTION_OUTPUTS: P1.6(TXD) serial output
+      */
+      void SerialPort1_ISR(void) interrupt 15
+      {
+      if (RI_1==1)
+      {                                       /* if reception occur */
+      clr_RI_1;                             /* clear reception flag for next reception */
+
+      }
+      if(TI_1==1)
+      {
+      clr_TI_1;                             /* if emission occur */
+
+      }
+      }
+    </INTERRUPT>
+  </UART1>
+  
+  <TIMER0>
+    <TIMER0_MODE0></TIMER0_MODE0>
+    <TIMER0_MODE1></TIMER0_MODE1>
+    <TIMER0_MODE2></TIMER0_MODE2>
+    <TIMER01_MODE3></TIMER01_MODE3>
+  </TIMER0>
+
+  <TIMER1>
+    <TIMER1_MODE0></TIMER1_MODE0>
+    <TIMER1_MODE1></TIMER1_MODE1>
+    <TIMER1_MODE2></TIMER1_MODE2>
+  </TIMER1>
+
+  <TIMER0_MODE0>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 0 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer0_ISR (void) interrupt 1  //interrupt address is 0x000B
+      {//Hardware auto clear TF0 flag
+      TH0 = vTH0_INIT;
+      TL0 = vTL0_INIT;
+      }
+    </INTERRUPT>
+
+    <INIT>
+      TIMER0_MODE0_ENABLE;  //Timer 0  configuration
+      clr_T0M;
+      TH0 = vTH0_INIT;
+      TL0 = vTL0_INIT;
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET0;                                    //enable Timer0 interrupt
+      set_TR0;                                    //START TIMER 0
+    </INTERRUPT_INIT>
+    <POLL>
+      set_TR0;                                   //START TIMER 0
+      while(!TF0);                                //POLL TIMER 0 FLAG
+      clr_TR0;                                //CLEAR TIMR 0
+      TH0 = vTH0_INIT;
+      TL0 = vTL0_INIT;
+
+      TF0 = 0 ;                              //CLEAR TF0
+    </POLL>
+  </TIMER0_MODE0>
+  
+  <TIMER1_MODE0>
+     <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 1 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer1_ISR (void) interrupt 3          //interrupt address is 0x001B
+      {
+      TH1 = vTH1_INIT;
+      TL1 = vTL1_INIT;
+
+    </INTERRUPT>
+
+    <INIT>
+      TIMER1_MODE0_ENABLE;  //Timer 1  configuration
+      clr_T1M;
+      TH1 = vTH1_INIT;
+      TL1 = vTL1_INIT;
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET1; //enable Timer1 interrupt
+      set_TR1; //START TIMER 1
+    </INTERRUPT_INIT>
+
+    <POLL>
+      set_TR1;                                   //START TIMER 1
+      while(!TF1);                               //POLL TIMER 1 FLAG
+      clr_TR1;                                   //CLEAR TIMR 1
+      TH1 = vTH1_INIT;
+      TL1 = vTL1_INIT;
+
+      TF1 = 0 ;                                  //CLEAR TF1
+    </POLL>
+  </TIMER1_MODE0>
+
+  <TIMER0_MODE1>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>      
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 0 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer0_ISR (void) interrupt 1  //interrupt address is 0x000B
+      {
+      TH0 = u8TH0;
+      TL0 = u8TL0;
+      }
+    </INTERRUPT>
+
+    <INIT>
+      TIMER0_MODE1_ENABLE;
+      TH0 = u8TH0;
+      TL0 = u8TL0;
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET0;                                    //enable Timer0 interrupt
+      set_TR0;                                    //Timer0 run
+    </INTERRUPT_INIT>
+  </TIMER0_MODE1>
+
+  <TIMER1_MODE1>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 1 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer1_ISR (void) interrupt 3 //interrupt address is 0x000B
+      {
+      TH1 = u8TH1;
+      TL1 = u8TL1;
+      }
+    </INTERRUPT>
+
+    <INIT>
+      TIMER1_MODE1_ENABLE;
+      TH1 = u8TH1;
+      TL1 = u8TL1;
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET1;                                    //enable Timer0 interrupt
+      set_TR1;                                    //Timer0 run
+    </INTERRUPT_INIT>
+  </TIMER1_MODE1>
+
+  <TIMER0_MODE2>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 0 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer0_ISR (void) interrupt 1  //interrupt address is 0x000B
+      {
+      // user timer0 isr code
+
+      }
+    </INTERRUPT>
+
+    <INIT>
+      TIMER0_MODE2_ENABLE;
+      TH0 = (256-uTIMER0);  //initial counter values
+      TL0 = (256-uTIMER0);
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET0;  //enable Timer0 interrupt
+      set_TR0;  //Timer0 run
+    </INTERRUPT_INIT>
+  </TIMER0_MODE2>
+
+  <TIMER1_MODE2>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 1 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer1_ISR (void) interrupt 3  //interrupt address is 0x001B
+      {
+      // user timer1 isr code
+
+      }
+    </INTERRUPT>
+
+    <INIT>
+      TIMER1_MODE2_ENABLE;
+      TH1 = (256-uTIMER1);  //initial counter values
+      TL1 = (256-uTIMER1);
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET1;  //enable Timer1 interrupt
+      set_TR1;  //Timer1 run
+    </INTERRUPT_INIT>
+  </TIMER1_MODE2>
+
+  <TIMER01_MODE3>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 0 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer0_ISR (void) interrupt 1  // interrupt address is 0x000B
+      {
+      TL0 = uTL0; // reload by software
+      }
+
+      /************************************************************************************************************
+      *    TIMER 1 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer1_ISR (void) interrupt 3  //interrupt address is 0x001B
+      {
+      TH0 = uTH0;
+
+      }
+    </INTERRUPT>
+
+    <INIT>
+      TIMER0_MODE3_ENABLE;
+      TIMER1_MODE3_ENABLE;
+      TH0 = uTH0;
+      TL0 = uTL0;
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET0;  //enable Timer0 counter interrupt
+      set_ET1;  //enable Timer1 counter interrupt
+      set_TR0;  //Timer0 run
+      set_TR1;  //Timer1 run
+    </INTERRUPT_INIT>
+  </TIMER01_MODE3>
+
+  
+  
+  
+  <PWM>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <PWM_PIN>
+        <P15>PWM5_P15_OUTPUT_ENABLE;</P15>
+        <P03>PWM5_P03_OUTPUT_ENABLE;</P03>
+        <P01>PWM4_P01_OUTPUT_ENABLE;</P01>        
+        <P00>PWM3_P00_OUTPUT_ENABLE;</P00>
+        <P04>PWM3_P04_OUTPUT_ENABLE;</P04>
+        <P05>PWM2_P05_OUTPUT_ENABLE;</P05>
+        <P10>PWM2_P10_OUTPUT_ENABLE;</P10>
+        <P14>PWM1_P14_OUTPUT_ENABLE;</P14>
+        <P11>PWM1_P11_OUTPUT_ENABLE;</P11>
+        <P12>PWM1_P12_OUTPUT_ENABLE;</P12>    
+    </PWM_PIN>
+        
+    <PWM_INT_PIN>      
+    <PWM_INT_PIN0> PWM_INT_PWM0 </PWM_INT_PIN0>
+    <PWM_INT_PIN1> PWM_INT_PWM1 </PWM_INT_PIN1>
+    <PWM_INT_PIN2> PWM_INT_PWM2 </PWM_INT_PIN2>
+    <PWM_INT_PIN3> PWM_INT_PWM3 </PWM_INT_PIN3>
+    <PWM_INT_PIN4> PWM_INT_PWM4 </PWM_INT_PIN4>
+    <PWM_INT_PIN5> PWM_INT_PWM5 </PWM_INT_PIN5>
+  </PWM_INT_PIN>
+    <PWM_INTTERUPT_MODE>
+      <PWM_FALLING_INT>
+        PWM_FALLING_INT;  //Setting Interrupt happen when PWM0 falling signal
+      </PWM_FALLING_INT>
+      <PWM_RISING_INT>
+        PWM_RISING_INT; //Setting Interrupt happen when PWM0 falling signal
+      </PWM_RISING_INT>
+      <PWM_CENTRAL_POINT_INT>
+        PWM_CENTRAL_POINT_INT;  //Setting Interrupt happen when PWM0 falling signal
+      </PWM_CENTRAL_POINT_INT>
+      <PWM_PERIOD_END_INT>
+        PWM_PERIOD_END_INT; //Setting Interrupt happen when PWM0 falling signal
+      </PWM_PERIOD_END_INT>
+
+
+
+    </PWM_INTTERUPT_MODE>
+    <INTERRUPT_INIT>
+      set_EPWM; //Enable PWM interrupt
+      //-------- PWM start run--------------
+      set_LOAD;
+      set_PWMRUN;
+    </INTERRUPT_INIT>
+    <INIT_PMW_CLK>
+      PWMPH = uPWMPH; //Setting PWM period
+      PWMPL = uPWMPL;
+    </INIT_PMW_CLK>
+    <INIT_PMW0>
+      PWM0H = uPWM0H;
+      PWM0L = uPWM0L;
+    </INIT_PMW0>
+    <INIT_PMW1>
+      PWM1H = uPWM1H;
+      PWM1L = uPWM1L;
+    </INIT_PMW1>
+    <INIT_PMW2>
+      PWM2H = uPWM2H;
+      PWM2L = uPWM2L;
+    </INIT_PMW2>
+
+    <INIT_PMW3>
+      PWM3H = uPWM3H;
+      PWM3L = uPWM3L;
+    </INIT_PMW3>
+
+    <INIT_PMW4>
+      set_SFRPAGE;  //PWM4 duty seting is in SFP page 1
+      PWM4H = uPWM4H;
+      PWM4L = uPWM4L;
+      clr_SFRPAGE;
+    </INIT_PMW4>
+    <INIT_PMW5>
+      set_SFRPAGE;  //PWM5 duty seting is in SFP page 1
+      PWM5H = uPWM5H;
+      PWM5L = uPWM5L;
+      clr_SFRPAGE;
+    </INIT_PMW5>
+    <PWM_CLOCK>
+      <PWM_CLOCK_FSYS>PWM_CLOCK_FSYS</PWM_CLOCK_FSYS>
+      <PWM_CLOCK_TIMER1>PWM_CLOCK_TIMER1</PWM_CLOCK_TIMER1>
+    </PWM_CLOCK>
+
+    <PWM_CLK_DIV>
+      <PWM_CLOCK_DIV_2></PWM_CLOCK_DIV_2>
+      <PWM_CLOCK_DIV_4></PWM_CLOCK_DIV_4>
+      <PWM_CLOCK_DIV_8></PWM_CLOCK_DIV_8>
+      <PWM_CLOCK_DIV_16></PWM_CLOCK_DIV_16>
+      <PWM_CLOCK_DIV_32></PWM_CLOCK_DIV_32>
+      <PWM_CLOCK_DIV_64></PWM_CLOCK_DIV_64>
+      <PWM_CLOCK_DIV_128></PWM_CLOCK_DIV_128>                  
+    </PWM_CLK_DIV>
+    <PWM_MODE>
+      <PWM_IMDEPENDENT_MODE>
+        PWM_IMDEPENDENT_MODE;
+      </PWM_IMDEPENDENT_MODE>
+      <PWM_COMPLEMENTARY_MODE>
+        PWM_IMDEPENDENT_MODE;
+      </PWM_COMPLEMENTARY_MODE>
+
+    </PWM_MODE>
+    <INIT>
+      //-------- PWM start run--------------
+      set_LOAD;
+      set_PWMRUN;
+    </INIT>
+    
+    <INTERRUPT>
+    void PWM_ISR (void) interrupt 13
+    {
+    clr_PWMF; // clear PWM interrupt flag
+    
+    }
+    </INTERRUPT>
+  </PWM>
+
+  <TIMER3>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <INTERRUPT>
+      /************************************************************************************************************
+      *    TIMER 3 interrupt subroutine
+      ************************************************************************************************************/
+      void Timer3_ISR (void) interrupt 16
+      {
+      clr_TF3;
+      //user code..
+
+      }
+    </INTERRUPT>
+
+    <INIT>
+      RH3 = uRELOAD_VALUE_H;  //initial counter values
+      RL3 = uRELOAD_VALUE_L;
+    </INIT>
+
+
+    <INTERRUPT_INIT>
+      set_ET3;  //enable Timer3 interrupt
+      set_TR3;  //START TIMER 3
+    </INTERRUPT_INIT>
+    <POLL>
+      set_TR3;  //START TIMER 3
+      while(!TF3);  //POLL TIMER 3 FLAG
+      clr_TF3;  //CLEAR TF3
+    </POLL>
+  </TIMER3>
+
+  <ADC>
+    <MODE>
+      <INTERRUPT>INTERRUPT</INTERRUPT>
+      <POLL>POLL</POLL>
+    </MODE>
+    <ADC_CH>
+      <PIN0>Enable_ADC_AIN0;</PIN0>
+      <PIN1>Enable_ADC_AIN1;</PIN1>
+      <PIN2>Enable_ADC_AIN2;</PIN2>
+      <PIN3>Enable_ADC_AIN3;</PIN3>
+      <PIN4>Enable_ADC_AIN4;</PIN4>
+      <PIN5>Enable_ADC_AIN5;</PIN5>
+      <PIN6>Enable_ADC_AIN6;</PIN6>
+      <PIN7>Enable_ADC_AIN7;</PIN7>      
+      <BANDGAP>Enable_ADC_BandGap;</BANDGAP>
+    </ADC_CH>
+    <POLL>
+      clr_ADCF; //Clear ADC flag
+      set_ADCS; // ADC start trig signal
+      while(ADCF == 0);
+       //user get ADCH and ADCL value in here
+    </POLL>
+
+    <INTERRUPT_INIT>
+      set_EADC;
+      clr_ADCF;
+      set_ADCS; // ADC start trig signal
+    </INTERRUPT_INIT>
+    <INTERRUPT>
+      /******************************************************************************
+      * FUNCTION_PURPOSE: ADC interrupt Service Routine
+      ******************************************************************************/
+      void ADC_ISR (void) interrupt 11
+      {
+      clr_ADCF; //clear ADC interrupt flag
+      //user get ADCH and ADCL value in here
+      }
+    </INTERRUPT>
+
+  </ADC>
+
+  <SPI>
+    <MODE_SELECT>
+      <Master>
+        set_MSTR; // SPI in Master mode
+      </Master>
+      <Slave>
+        clr_MSTR; // SPI in Slave mode
+      </Slave>
+    </MODE_SELECT>
+
+    <SS_SELECT>
+      <AUTO_SS>
+        set_DISMODF;  // SS General purpose I/O ( No Mode Fault )
+        set_SSOE;
+      </AUTO_SS>
+      <GPIO>
+        set_DISMODF;  // SS General purpose I/O ( No Mode Fault )
+        clr_SSOE;
+      </GPIO>
+    </SS_SELECT>>
+
+    <LSB_SELECT>
+      <ENABLE>
+        set_LSBFE; //LSB first
+      </ENABLE>
+      <DISABLE>
+        clr_LSBFE; //MSB first
+      </DISABLE>
+    </LSB_SELECT>>
+
+    <CPOL_SELECT>
+      <IDLE_HIGH>
+        set_CPOL; // The SPI clock is high in idle mode
+      </IDLE_HIGH>
+      <IDLE_LOW>
+        clr_CPOL; // The SPI clock is low in idle mode
+      </IDLE_LOW>
+    </CPOL_SELECT>>
+
+    <CPHA_SELECT>
+      <First_Edge>
+        clr_CPHA; // The data is sample on the first edge of SPI clock
+      </First_Edge>
+      <Second_Edge>
+        set_CPHA; // The data is sample on the second edge of SPI clock
+      </Second_Edge>
+    </CPHA_SELECT>>
+
+    <CLK_DIV>
+      <SPICLK_DIV16>
+        SPICLK_DIV16
+      </SPICLK_DIV16>
+      <SPICLK_DIV8>
+        SPICLK_DIV8
+      </SPICLK_DIV8>
+      <SPICLK_DIV4>
+        SPICLK_DIV4
+      </SPICLK_DIV4>
+
+      <SPICLK_DIV2>
+        SPICLK_DIV2
+      </SPICLK_DIV2>
+    </CLK_DIV>
+
+
+    <POLL_MASTER>
+      set_SPIEN;  // Enable SPI function
+      clr_SPIF;
+      uSS_DISABLE;
+      SPDR = USER_DATA;                           //USER DATA is SPI DATA OUT
+      while(!(SPSR & SET_BIT7));
+      clr_SPIF;
+      GET_DATA= SPDR;
+      uSS_ENABLE;                                //GET USER DATA
+    </POLL_MASTER>
+
+    <POLL_SLAVE>
+      set_SPIEN;  // Enable SPI function
+      clr_SPIF;      
+      SPDR = USER_DATA; //USER DATA is SPI DATA OUT
+      while(!(SPSR & SET_BIT7));
+      clr_SPIF;
+      GET_DATA= SPDR;
+      uSS_ENABLE; //GET USER DATA
+    </POLL_SLAVE>
+
+    <INTERRUPT_INIT>
+      set_SPIEN;  // Enable SPI function
+      clr_SPIF;
+      Enable_SPI_Interrupt; // Enable SPI interrupt
+      SS = 0;
+      temp_spi_flag=0;
+      SPDR = 0x90;
+      while(temp_spi_flag==0);    //wait SPI interrupt flag
+    </INTERRUPT_INIT>
+
+    <INTERRUPUT>
+      unsigned char temp_spi_flag;
+      void SPI_ISR(void) interrupt 9  // SPI interrupt Vecotr @  0x4B
+      {
+      clr_SPIF;
+      GET_DATA= SPDR;
+      temp_spi_flag=1;
+      }
+    </INTERRUPUT>
+
+
+
+  </SPI>
+  
+  <IAP>
+   <IAP_DEFINE>
+     #define     CID_READ            0x0B
+     #define     DID_READ            0x0C
+
+     /*
+     Since the DATAFLASH is in the APROM. Program command is same as program APROM
+     */
+     #define     PAGE_ERASE_AP       0x22
+     #define     BYTE_READ_AP        0x00
+     #define     BYTE_PROGRAM_AP     0x21
+     #define     PAGE_SIZE           128
+   </IAP_DEFINE>
+
+  
+  <IAP_TRIGGER>
+   void Trigger_IAP(void)
+   {
+   set_IAPGO;																	//trigger IAP
+   if((CHPCON&SET_BIT6)==SET_BIT6)             // if fail flag is set, toggle error LED and IAP stop
+   {
+   clr_IAPFF;
+   IAP_ERROR_LED();
+   }
+   }
+ </IAP_TRIGGER>  
+  <IAP_ERASE>
+    /*****************************************************************************************************************
+    Erase APROM subroutine:
+    ******************************************************************************************************************/
+    void Erase(unsgined int address)
+    {
+    UINT16 u16Count;
+    set_IAPEN;													// Enable IAP function
+    IAPFD = 0xFF;												// IMPORTANT !! To erase function must setting IAPFD = 0xFF
+    IAPCN = PAGE_ERASE_AP;
+    set_APUEN;													//  APROM modify Enable
+    IAPAL = LOBYTE(address);
+    IAPAH = HIBYTE(addressaddress);
+    Trigger_IAP();
+
+    clr_APUEN;
+    clr_IAPEN;
+    }
+  </IAP_ERASE>
+  <IAP_Program>
+    void Program_APROM(unsigned int address,unsigned char value)
+    {
+    UINT16 u16Count;
+
+    set_IAPEN;
+    set_APUEN;
+    IAPAL = LOBYTE(address);
+    IAPAH = HIBYTE(address);
+    IAPCN = BYTE_PROGRAM_AP;
+
+    IAPFD=value;
+    Trigger_IAP();
+
+
+    clr_APUEN;
+    clr_IAPEN;
+    }
+  </IAP_Program>
+  <IAP_Read>
+      UINT8 Program_APROM_Verify(unsigned int address)
+      {
+      UINT16 u16Count;
+      UINT8  u8Read_Data;
+
+      set_IAPEN;
+      IAPAL = LOBYTE(address);
+      IAPAH = HIBYTE(address);
+      IAPCN = BYTE_READ_AP;
+      u8Read_Data = 0x00;
+
+
+      Trigger_IAP();
+      u8Read_Data=IAPFD;
+
+      clr_IAPEN;
+      return u8Read_Data;
+      }
+    </IAP_Read>
+
+
+  </IAP>
+
+</SETTING>

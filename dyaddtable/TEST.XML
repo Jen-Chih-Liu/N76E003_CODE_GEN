@@ -594,7 +594,7 @@
       /************************************************************************************************************
       *    TIMER 0 interrupt subroutine
       ************************************************************************************************************/
-      void Timer0_ISR (void) interrupt 1              //interrupt address is 0x000B
+      void Timer0_ISR (void) interrupt 1  //interrupt address is 0x000B
       {
       // user timer0 isr code
 
@@ -603,14 +603,14 @@
 
     <INIT>
       TIMER0_MODE2_ENABLE;
-      TH0 = (256-uTIMER0);            //initial counter values
+      TH0 = (256-uTIMER0);  //initial counter values
       TL0 = (256-uTIMER0);
     </INIT>
 
 
     <INTERRUPT_INIT>
-      set_ET0;                                    //enable Timer0 interrupt
-      set_TR0;                                    //Timer0 run
+      set_ET0;  //enable Timer0 interrupt
+      set_TR0;  //Timer0 run
     </INTERRUPT_INIT>
   </TIMER0_MODE2>
 
@@ -650,15 +650,15 @@
       /************************************************************************************************************
       *    TIMER 0 interrupt subroutine
       ************************************************************************************************************/
-      void Timer0_ISR (void) interrupt 1              // interrupt address is 0x000B
+      void Timer0_ISR (void) interrupt 1  // interrupt address is 0x000B
       {
-      TL0 = uTL0;                             // reload by software
+      TL0 = uTL0; // reload by software
       }
 
       /************************************************************************************************************
       *    TIMER 1 interrupt subroutine
       ************************************************************************************************************/
-      void Timer1_ISR (void) interrupt 3              //interrupt address is 0x001B
+      void Timer1_ISR (void) interrupt 3  //interrupt address is 0x001B
       {
       TH0 = uTH0;
 
@@ -674,10 +674,10 @@
 
 
     <INTERRUPT_INIT>
-      set_ET0;                                    //enable Timer0 counter interrupt
-      set_ET1;                                    //enable Timer1 counter interrupt
-      set_TR0;                                    //Timer0 run
-      set_TR1;                                    //Timer1 run
+      set_ET0;  //enable Timer0 counter interrupt
+      set_ET1;  //enable Timer1 counter interrupt
+      set_TR0;  //Timer0 run
+      set_TR1;  //Timer1 run
     </INTERRUPT_INIT>
   </TIMER01_MODE3>
 
@@ -712,26 +712,29 @@
   </PWM_INT_PIN>
     <PWM_INTTERUPT_MODE>
       <PWM_FALLING_INT>
-        PWM_FALLING_INT;					//Setting Interrupt happen when PWM0 falling signal
+        PWM_FALLING_INT;  //Setting Interrupt happen when PWM0 falling signal
       </PWM_FALLING_INT>
       <PWM_RISING_INT>
-        PWM_RISING_INT;					//Setting Interrupt happen when PWM0 falling signal
+        PWM_RISING_INT; //Setting Interrupt happen when PWM0 falling signal
       </PWM_RISING_INT>
       <PWM_CENTRAL_POINT_INT>
-        PWM_CENTRAL_POINT_INT;					//Setting Interrupt happen when PWM0 falling signal
+        PWM_CENTRAL_POINT_INT;  //Setting Interrupt happen when PWM0 falling signal
       </PWM_CENTRAL_POINT_INT>
       <PWM_PERIOD_END_INT>
-        PWM_PERIOD_END_INT;					//Setting Interrupt happen when PWM0 falling signal
+        PWM_PERIOD_END_INT; //Setting Interrupt happen when PWM0 falling signal
       </PWM_PERIOD_END_INT>
 
 
 
     </PWM_INTTERUPT_MODE>
     <INTERRUPT_INIT>
-      set_EPWM;									//Enable PWM interrupt
+      set_EPWM; //Enable PWM interrupt
+      //-------- PWM start run--------------
+      set_LOAD;
+      set_PWMRUN;
     </INTERRUPT_INIT>
     <INIT_PMW_CLK>
-      PWMPH = uPWMPH;							//Setting PWM period
+      PWMPH = uPWMPH; //Setting PWM period
       PWMPL = uPWMPL;
     </INIT_PMW_CLK>
     <INIT_PMW0>
@@ -753,13 +756,13 @@
     </INIT_PMW3>
 
     <INIT_PMW4>
-      set_SFRPAGE;						//PWM4 and PWM5 duty seting is in SFP page 1
+      set_SFRPAGE;  //PWM4 duty seting is in SFP page 1
       PWM4H = uPWM4H;
       PWM4L = uPWM4L;
       clr_SFRPAGE;
     </INIT_PMW4>
     <INIT_PMW5>
-      set_SFRPAGE;						//PWM4 and PWM5 duty seting is in SFP page 1
+      set_SFRPAGE;  //PWM5 duty seting is in SFP page 1
       PWM5H = uPWM5H;
       PWM5L = uPWM5L;
       clr_SFRPAGE;
@@ -796,7 +799,7 @@
     <INTERRUPT>
     void PWM_ISR (void) interrupt 13
     {
-    clr_PWMF;               // clear PWM interrupt flag
+    clr_PWMF; // clear PWM interrupt flag
     
     }
     </INTERRUPT>
@@ -820,19 +823,19 @@
     </INTERRUPT>
 
     <INIT>
-      RH3 = uRELOAD_VALUE_H;                       //initial counter values
+      RH3 = uRELOAD_VALUE_H;  //initial counter values
       RL3 = uRELOAD_VALUE_L;
     </INIT>
 
 
     <INTERRUPT_INIT>
-      set_ET3;                                    //enable Timer3 interrupt
-      set_TR3;                   //START TIMER 3
+      set_ET3;  //enable Timer3 interrupt
+      set_TR3;  //START TIMER 3
     </INTERRUPT_INIT>
     <POLL>
-      set_TR3;                                   //START TIMER 3
-      while(!TF3);                                //POLL TIMER 3 FLAG
-      clr_TF3;                              //CLEAR TF3
+      set_TR3;  //START TIMER 3
+      while(!TF3);  //POLL TIMER 3 FLAG
+      clr_TF3;  //CLEAR TF3
     </POLL>
   </TIMER3>
 
@@ -862,7 +865,7 @@
     <INTERRUPT_INIT>
       set_EADC;
       clr_ADCF;
-      set_ADCS;									// ADC start trig signal
+      set_ADCS; // ADC start trig signal
     </INTERRUPT_INIT>
     <INTERRUPT>
       /******************************************************************************
@@ -870,7 +873,7 @@
       ******************************************************************************/
       void ADC_ISR (void) interrupt 11
       {
-      clr_ADCF;                               //clear ADC interrupt flag
+      clr_ADCF; //clear ADC interrupt flag
       //user get ADCH and ADCL value in here
       }
     </INTERRUPT>
